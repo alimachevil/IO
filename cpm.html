@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM - Programación de Proyectos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            width: 80%;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .critical {
+            background-color: red;
+            color: white;
+        }
+        #results {
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>CPM - Programación de Proyectos</h1>
+    <label for="numActivities">Número de Actividades:</label>
+    <input type="number" id="numActivities" min="1" onchange="createTable()"><br><br>
+    <table id="activityTable"></table>
+    <button onclick="calculateCPM()">Calcular Duración del Proyecto</button>
+    <div id="results"></div>
+
+    <script>
+        function createTable() {
+            const numActivities = document.getElementById('numActivities').value;
+            const table = document.getElementById('activityTable');
+            table.innerHTML = `
+                <tr>
+                    <th>Actividad</th>
+                    <th>Duración</th>
+                    <th>Predecesores</th>
+                </tr>
+            `;
+
+            for (let i = 0; i < numActivities; i++) {
+                const row = table.insertRow();
+                row.insertCell(0).innerHTML = `A${i + 1}`;
+                row.insertCell(1).innerHTML = `<input type="number" id="duration${i}" min="0" required>`;
+                row.insertCell(2).innerHTML = `<input type="text" id="predecessors${i}" placeholder="Ej: A1,A2">`;
+            }
+        }
+
+        function calculateCPM() {
+            const numActivities = document.getElementById('numActivities').value;
+            const durations = [];
+            const predecessors = [];
+
+            for (let i = 0; i < numActivities; i++) {
+                const duration = parseInt(document.getElementById(`duration${i}`).value) || 0;
+                const predecessor = document.getElementById(`predecessors${i}`).value.split(',').map(p => p.trim());
+                durations.push(duration);
+                predecessors.push(predecessor);
+            }
+
+            const results = computeCPM(durations, predecessors);
+            displayResults(results);
+        }
+
+        function computeCPM(durations, predecessors) {
+            const numActivities = durations.length;
+            const earlyStart = Array(numActivities).fill(0);
+            const earlyFinish = Array(numActivities).fill(0);
+            const lateStart = Array(numActivities).fill(Infinity);
+            const lateFinish = Array(numActivities).fill(Infinity);
+            const slack = Array(numActivities).fill(0);
+            const adjList = Array.from({ length: numActivities }, () => []);
+            const inDegree = Array(numActivities).fill(0);
+
+            // Crear lista de adyacencia y contar entradas
+            for (let i = 0; i < numActivities; i++) {
+                for (const pred of predecessors[i]) {
+                    if (pred) {
+                        const predIndex = parseInt(pred.slice(1)) - 1; // Convertir 'A1' a índice 0
+                        adjList[predIndex].push(i);
+                        inDegree[i]++;
+                    }
+                }
+            }
+
+            // Calcular Early Start y Early Finish
+            const queue = [];
+            for (let i = 0; i < numActivities; i++) {
+                if (inDegree[i] === 0) {
+                    queue.push(i);
+                    earlyFinish[i] = durations[i]; // Si no tiene predecesores, se puede comenzar inmediatamente
+                }
+            }
+
+            while (queue.length > 0) {
+                const current = queue.shift();
+                for (const neighbor of adjList[current]) {
+                    earlyStart[neighbor] = Math.max(earlyStart[neighbor], earlyFinish[current]);
+                    earlyFinish[neighbor] = earlyStart[neighbor] + durations[neighbor];
+
+                    inDegree[neighbor]--;
+                    if (inDegree[neighbor] === 0) {
+                        queue.push(neighbor);
+                    }
+                }
+            }
+
+            // Asignar la fecha de finalización más tardía al inicio
+            for (let i = 0; i < numActivities; i++) {
+                lateFinish[i] = earlyFinish[numActivities - 1]; // Asignar a todas inicialmente la fecha de finalización más tardía
+            }
+
+            // Calcular Late Start y Late Finish
+            for (let i = numActivities - 1; i >= 0; i--) {
+                for (const neighbor of adjList[i]) {
+                    lateFinish[i] = Math.min(lateFinish[i], lateStart[neighbor]);
+                }
+                lateStart[i] = lateFinish[i] - durations[i];
+            }
+
+            // Calcular slack y actividades críticas
+            const criticalActivities = [];
+            for (let i = 0; i < numActivities; i++) {
+                slack[i] = lateStart[i] - earlyStart[i];
+                if (slack[i] === 0) {
+                    criticalActivities.push(`A${i + 1}`);
+                }
+            }
+
+            const totalDuration = earlyFinish[numActivities - 1];
+
+            return { totalDuration, earlyStart, earlyFinish, lateStart, lateFinish, slack, criticalActivities };
+        }
+
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('results');
+            let output = `<h3>Resultados</h3>
+                          <p>Duración Total del Proyecto: ${results.totalDuration}</p>`;
+            
+            output += `<table>
+                          <tr>
+                            <th>Actividad</th>
+                            <th>Early Start</th>
+                            <th>Early Finish</th>
+                            <th>Late Start</th>
+                            <th>Late Finish</th>
+                            <th>Slack</th>
+                          </tr>`;
+            
+            for (let i = 0; i < results.earlyStart.length; i++) {
+                output += `<tr>
+                             <td>A${i + 1}</td>
+                             <td>${results.earlyStart[i]}</td>
+                             <td>${results.earlyFinish[i]}</td>
+                             <td>${results.lateStart[i]}</td>
+                             <td>${results.lateFinish[i]}</td>
+                             <td>${results.slack[i]}</td>
+                           </tr>`;
+            }
+
+            output += `</table>`;
+            output += `<p>Actividades Críticas: ${results.criticalActivities.join(', ') || 'Ninguna'}</p>`;
+
+            resultsDiv.innerHTML = output;
+            resultsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+

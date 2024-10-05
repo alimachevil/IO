@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimización - Investigación Operativa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        form {
+            margin: 0 auto;
+            width: 80%;
+            max-width: 600px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select, button {
+            margin: 10px;
+            padding: 10px;
+            width: 90%;
+            font-size: 16px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Modelo de Optimización</h1>
+    
+    <form id="optimizationForm">
+        <h2>Selecciona Cantidad de Variables y Restricciones</h2>
+        <label for="numVariables">Cantidad de Variables:</label>
+        <input type="number" id="numVariables" min="1" value="2" required>
+        
+        <label for="numRestricciones">Cantidad de Restricciones:</label>
+        <input type="number" id="numRestricciones" min="1" value="2" required>
+        
+        <button type="button" onclick="generarFormulario()">Generar Formulario</button>
+        
+        <div id="formularioGenerado"></div>
+        
+        <button type="submit" style="display:none;" id="btnCalcular">Calcular</button>
+    </form>
+
+    <div id="result" class="result"></div>
+
+    <script>
+        function generarFormulario() {
+            const numVariables = parseInt(document.getElementById('numVariables').value);
+            const numRestricciones = parseInt(document.getElementById('numRestricciones').value);
+            let formularioHTML = '';
+
+            formularioHTML += '<h2>Función Objetivo</h2>';
+            for (let i = 1; i <= numVariables; i++) {
+                formularioHTML += `<input type="number" name="coefVar${i}" placeholder="Coeficiente de la variable ${i}" required> `;
+            }
+
+            formularioHTML += '<h2>Restricciones</h2>';
+            for (let j = 1; j <= numRestricciones; j++) {
+                formularioHTML += `<h3>Restricción ${j}</h3>`;
+                
+                // Lado Izquierdo (variables)
+                formularioHTML += '<h4>Lado Izquierdo (Variables):</h4>';
+                for (let i = 1; i <= numVariables; i++) {
+                    formularioHTML += `<input type="number" name="coefRestIzq${j}Var${i}" placeholder="Coef Variable ${i} (si aplica)" required> `;
+                }
+                
+                // Símbolo de la restricción
+                formularioHTML += `
+                    <select name="simboloRest${j}">
+                        <option value="<=">&le;</option>
+                        <option value=">=">&ge;</option>
+                        <option value="<">&lt;</option>
+                        <option value=">">&gt;</option>
+                        <option value="=">=</option>
+                    </select><br>
+                `;
+                
+                // Lado Derecho (variables + monto fijo)
+                formularioHTML += '<h4>Lado Derecho (Variables + Monto Fijo):</h4>';
+                for (let i = 1; i <= numVariables; i++) {
+                    formularioHTML += `<input type="number" name="coefRestDer${j}Var${i}" placeholder="Coef Variable ${i} (si aplica)" required> `;
+                }
+                formularioHTML += `<input type="number" name="montoRestDer${j}" placeholder="Monto fijo" required><br><br>`;
+            }
+
+            document.getElementById('formularioGenerado').innerHTML = formularioHTML;
+            document.getElementById('btnCalcular').style.display = 'block';
+        }
+
+        function resolverOptimizacion(coefObjetivo, restricciones) {
+            // Algoritmo de optimización simple basado en fuerza bruta
+            let mejorValor = -Infinity;
+            let mejorSolucion = {};
+
+            for (let x = 0; x <= 100; x++) {
+                for (let y = 0; y <= 100; y++) {
+                    let factible = true;
+
+                    for (let restriccion of restricciones) {
+                        let valorIzq = restriccion.ladoIzquierdo[0] * x + restriccion.ladoIzquierdo[1] * y;
+                        let valorDer = restriccion.ladoDerecho[0] * x + restriccion.ladoDerecho[1] * y + restriccion.montoDerecho;
+
+                        switch (restriccion.simbolo) {
+                            case "<=":
+                                if (valorIzq > valorDer) factible = false;
+                                break;
+                            case ">=":
+                                if (valorIzq < valorDer) factible = false;
+                                break;
+                            case "=":
+                                if (valorIzq !== valorDer) factible = false;
+                                break;
+                            // Agrega más casos según los símbolos
+                        }
+
+                        if (!factible) break;
+                    }
+
+                    if (factible) {
+                        let valorObjetivo = coefObjetivo[0] * x + coefObjetivo[1] * y;
+                        if (valorObjetivo > mejorValor) {
+                            mejorValor = valorObjetivo;
+                            mejorSolucion = { x, y };
+                        }
+                    }
+                }
+            }
+
+            return { mejorValor, mejorSolucion };
+        }
+
+        document.getElementById('optimizationForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const numVariables = parseInt(document.getElementById('numVariables').value);
+            const numRestricciones = parseInt(document.getElementById('numRestricciones').value);
+
+            let coeficientesObjetivo = [];
+            let restricciones = [];
+
+            // Obtener coeficientes de la función objetivo
+            for (let i = 1; i <= numVariables; i++) {
+                coeficientesObjetivo.push(parseFloat(document.querySelector(`input[name="coefVar${i}"]`).value));
+            }
+
+            // Obtener restricciones
+            for (let j = 1; j <= numRestricciones; j++) {
+                let restriccion = {
+                    ladoIzquierdo: [],
+                    ladoDerecho: [],
+                    montoDerecho: parseFloat(document.querySelector(`input[name="montoRestDer${j}"]`).value),
+                    simbolo: document.querySelector(`select[name="simboloRest${j}"]`).value
+                };
+                
+                // Obtener lado izquierdo (variables)
+                for (let i = 1; i <= numVariables; i++) {
+                    restriccion.ladoIzquierdo.push(parseFloat(document.querySelector(`input[name="coefRestIzq${j}Var${i}"]`).value));
+                }
+                
+                // Obtener lado derecho (variables)
+                for (let i = 1; i <= numVariables; i++) {
+                    restriccion.ladoDerecho.push(parseFloat(document.querySelector(`input[name="coefRestDer${j}Var${i}"]`).value));
+                }
+                
+                restricciones.push(restriccion);
+            }
+
+            // Resolver problema de optimización
+            const resultado = resolverOptimizacion(coeficientesObjetivo, restricciones);
+
+            // Mostrar el resultado
+            document.getElementById('result').innerText = `Mejor beneficio: ${resultado.mejorValor}\nValores óptimos: ${JSON.stringify(resultado.mejorSolucion)}`;
+        });
+    </script>
+
+</body>
+</html>
+
