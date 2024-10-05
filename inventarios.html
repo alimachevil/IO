@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelos de Inventarios</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .menu-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            margin: 10px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .menu-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Modelos de Inventarios</h1>
+    <p>Seleccione un modelo para calcular:</p>
+
+    <div class="menu-container">
+        <button class="menu-button" onclick="window.location.href='eoq.html'">Modelo EOQ (Cantidad Económica de Pedido)</button>
+        <button class="menu-button" onclick="window.location.href='epq.html'">Modelo EPQ (Tamaño del Lote de Producción Económico)</button>
+        <button class="menu-button" onclick="window.location.href='faltantes.html'">Modelo de Inventario con Faltantes Planeados</button>
+        <button class="menu-button" onclick="window.location.href='descuentos_eoq.html'">Descuentos por Cantidad en el Modelo EOQ</button>
+    </div>
+
+</body>
+</html>

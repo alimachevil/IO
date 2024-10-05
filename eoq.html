@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo EOQ - Cantidad Económica de Pedido</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        .form-container {
+            display: inline-block;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            font-size: 16px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            margin-top: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        #resultado {
+            margin-top: 30px;
+            font-size: 18px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Modelo EOQ - Cantidad Económica de Pedido</h1>
+    <div class="form-container">
+        <label for="demanda">Demanda Anual (D):</label>
+        <input type="number" id="demanda" placeholder="Ingrese la demanda anual (o deje vacío si usa demanda diaria)">
+
+        <label for="demanda_diaria">Demanda Diaria:</label>
+        <input type="number" id="demanda_diaria" placeholder="Ingrese la demanda diaria (opcional)">
+
+        <label for="dias_laborables">Días Laborables por Año:</label>
+        <input type="number" id="dias_laborables" placeholder="Ingrese los días laborables por año (opcional)">
+
+        <label for="costo_pedido">Costo de Hacer un Pedido (S):</label>
+        <input type="number" id="costo_pedido" placeholder="Ingrese el costo de pedido" required>
+
+        <label for="costo_mantener">Costo de Mantener una Unidad (H):</label>
+        <input type="number" id="costo_mantener" placeholder="Ingrese el costo de mantener una unidad" required>
+
+        <label for="costo_unitario">Costo Unitario:</label>
+        <input type="number" id="costo_unitario" placeholder="Ingrese el costo unitario (opcional)">
+
+        <label for="tiempo_espera">Tiempo de Espera (Lead Time) en Días:</label>
+        <input type="number" id="tiempo_espera" placeholder="Ingrese el tiempo de espera (días)" required>
+
+        <button class="btn" onclick="calcularEOQ()">Calcular EOQ</button>
+    </div>
+
+    <div id="resultado"></div>
+
+    <script>
+        function calcularEOQ() {
+            // Obtener los valores ingresados por el usuario
+            let demandaAnual = parseFloat(document.getElementById('demanda').value);
+            const demandaDiaria = parseFloat(document.getElementById('demanda_diaria').value);
+            const diasLaborables = parseFloat(document.getElementById('dias_laborables').value);
+            const S = parseFloat(document.getElementById('costo_pedido').value);
+            const H = parseFloat(document.getElementById('costo_mantener').value);
+            const costoUnitario = parseFloat(document.getElementById('costo_unitario').value);
+            const tiempoEspera = parseFloat(document.getElementById('tiempo_espera').value);
+
+            // Validar y calcular la demanda anual si se proporcionan la demanda diaria y días laborables
+            if (!demandaAnual && demandaDiaria && diasLaborables) {
+                demandaAnual = demandaDiaria * diasLaborables;
+            }
+
+            if (demandaAnual > 0 && S > 0 && H > 0 && tiempoEspera > 0) {
+                // Calcular el EOQ
+                const EOQ = Math.sqrt((2 * demandaAnual * S) / H).toFixed(2);
+
+                // Calcular el tiempo de reorden (Reorder Point)
+                const reorderPoint = (demandaDiaria * tiempoEspera).toFixed(2);
+
+                // Mostrar el resultado
+                document.getElementById('resultado').innerHTML = `
+                    La Cantidad Económica de Pedido (EOQ) es: <strong>${EOQ}</strong> unidades.<br>
+                    Punto de Reorden (Reorder Point): <strong>${reorderPoint}</strong> unidades.<br>
+                    Costo Unitario: <strong>${costoUnitario ? costoUnitario.toFixed(2) : 'No proporcionado'}</strong>.
+                `;
+            } else {
+                document.getElementById('resultado').innerHTML = `<span style="color: red;">Por favor, ingrese valores válidos en todos los campos obligatorios.</span>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
